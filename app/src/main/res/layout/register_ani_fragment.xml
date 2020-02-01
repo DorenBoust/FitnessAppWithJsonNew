@@ -24,8 +24,8 @@
             android:backgroundTint="#97E6B8"
             android:fontFamily="@font/open_sans_hebrew_light"
             android:gravity="center"
-            android:hint="@string/login_et_username"
-            android:inputType="text"
+            android:hint="@string/register_et_email"
+            android:inputType="textEmailAddress"
             android:paddingBottom="20dp"
             android:textColor="@color/waite"
             android:textColorHint="@color/waite"
@@ -168,36 +168,6 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         app:layout_constraintGuide_percent="0.37" />
-
-    <ImageView
-        android:id="@+id/iv_register_eye_pass"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:src="@drawable/ic_eye_white_24dp"
-        app:layout_constraintBottom_toBottomOf="@+id/password_register"
-        app:layout_constraintEnd_toEndOf="@+id/password_register"
-        app:layout_constraintTop_toTopOf="@+id/password_register" />
-
-    <ImageView
-        android:id="@+id/iv_register_eye_passvalidation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:src="@drawable/ic_eye_white_24dp"
-        app:layout_constraintBottom_toBottomOf="@+id/passwordvalidation_register"
-        app:layout_constraintEnd_toEndOf="@+id/password_register"
-        app:layout_constraintTop_toTopOf="@+id/passwordvalidation_register" />
-
-    <ImageView
-        android:id="@+id/iv_register_eye_integrationcode"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:src="@drawable/ic_eye_white_24dp"
-        app:layout_constraintBottom_toBottomOf="@+id/validation_register"
-        app:layout_constraintEnd_toEndOf="@+id/password_register"
-        app:layout_constraintTop_toTopOf="@+id/validation_register" />
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/register_animation"

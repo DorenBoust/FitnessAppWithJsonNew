@@ -10,13 +10,17 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.text.TextUtils;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.airbnb.lottie.LottieAnimationView;
 import com.example.fitnessapp.MainActivity;
 import com.example.fitnessapp.R;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -24,6 +28,8 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.Objects;
 
 public class LoginAniFragment extends Fragment {
 
@@ -33,6 +39,7 @@ public class LoginAniFragment extends Fragment {
     private TextInputLayout etUser;
     private TextInputLayout etPass;
     private FirebaseAuth fAuth;
+    private LottieAnimationView loginAnimation;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -44,24 +51,18 @@ public class LoginAniFragment extends Fragment {
         etUser = v.findViewById(R.id.username_login);
         etPass = v.findViewById(R.id.password_login);
         fAuth = FirebaseAuth.getInstance();
+        loginAnimation = v.findViewById(R.id.login_animation);
 
         btnLogin.setOnClickListener(btn->{
+
+
             String user = etUser.getEditText().getText().toString();
             String pass = etPass.getEditText().getText().toString();
 
             validationField();
 
-            fAuth.signInWithEmailAndPassword(user,pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                @Override
-                public void onComplete(@NonNull Task<AuthResult> task) {
-                    if (task.isSuccessful()){
-                        startActivity(new Intent(getContext(), MainActivity.class));
+            fAuthChecking(etUser,etPass);
 
-                    } else{
-                        Toast.makeText(getContext(), "שם משתמש או סיסמא שגויים", Toast.LENGTH_SHORT).show();
-                    }
-                }
-            });
         });
 
 
@@ -82,21 +83,60 @@ public class LoginAniFragment extends Fragment {
     }
 
     private void validationField(){
+
         String user = etUser.getEditText().getText().toString();
         String pass = etPass.getEditText().getText().toString();
 
         if (TextUtils.isEmpty(user)){
-            etUser.setError("לא הוזן מייל");
+            etUser.setError("שדה חובה");
+        }else if (!Patterns.EMAIL_ADDRESS.matcher(user).matches()){
+            etUser.setError("נא להזין כתובת מייל תיקנית");
         } else {
             etUser.setError(null);
         }
 
         if (TextUtils.isEmpty(pass)){
-            etPass.setError("לא הוזנה סיסמא");
+            etPass.setError("שדה חובה");
         } else {
             etPass.setError(null);
         }
 
+
+    }
+
+    private void fAuthChecking(TextInputLayout etUser, TextInputLayout etPass){
+
+        String user = etUser.getEditText().getText().toString();
+        String pass = etPass.getEditText().getText().toString();
+
+        if (Objects.equals(etUser.getError(), null) && Objects.equals(etPass.getError(), null)) {
+            btnLogin.setVisibility(View.INVISIBLE);
+            loginAnimation.setVisibility(View.VISIBLE);
+            loginAnimation.playAnimation();
+            fAuth.signInWithEmailAndPassword(user, pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                @Override
+                public void onComplete(@NonNull Task<AuthResult> task) {
+
+                    if (task.isSuccessful()) {
+                        Intent intent = new Intent(getContext(), MainActivity.class);
+                        startActivity(intent);
+                        //TODO:Cant adding finish(); = ask why
+
+
+                    } else {
+                        etPass.setError("שם המשתמש או הסיסמא שגויים");
+                        etUser.setError("שם המשתמש או הסיסמא שגויים");
+                        Animation animation = AnimationUtils.loadAnimation(getContext(), R.anim.faidin);
+                        btnLogin.setAnimation(animation);
+                        btnLogin.setVisibility(View.VISIBLE);
+                        loginAnimation.setVisibility(View.INVISIBLE);
+
+                    }
+                }
+            });
+
+
+        }
     }
 
 }

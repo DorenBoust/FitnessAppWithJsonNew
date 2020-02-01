@@ -1,13 +1,9 @@
 package com.example.fitnessapp.loginAndRegisterAnimated;
 
-import androidx.annotation.DrawableRes;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
-import android.content.Intent;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
@@ -15,63 +11,60 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import android.text.InputType;
 import android.text.TextUtils;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.example.fitnessapp.R;
-import com.example.fitnessapp.models.AsynUserJSON;
+import com.example.fitnessapp.keys.KeysFirebaseStore;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class RegisterAniFragment extends Fragment {
 
-
-    //TODO:change edittext user to email
     private RegisterAniViewModel mViewModel;
     private TextView tvToLogin;
     private LottieAnimationView registeAnimation;
 
-    private TextInputLayout etUserName;
+    private TextInputLayout etEmail;
     private TextInputLayout etPass;
-    private int counterPassEye = 0;
 
     private ImageView ivEyePass;
     private TextInputLayout etPassValidation;
-    private int counterPassValidationEye = 0;
 
     private ImageView ivEyePassValidation;
     private TextInputLayout etIntegrationCode;
-    private int counterIntegrationCodeEye = 0;
 
     private ImageView ivEyePassIntegrationCode;
     private Button btnRegister;
 
     private FirebaseAuth fAuth;
+    private FirebaseFirestore fStore;
+    private String userID;
 
     private String intagrationCodeStatus = "";
 
@@ -104,16 +97,14 @@ public class RegisterAniFragment extends Fragment {
         tvToLogin = getView().findViewById(R.id.tv_register_click_to_login);
         registeAnimation = getView().findViewById(R.id.register_animation);
 
-        etUserName = getView().findViewById(R.id.username_login);
+        etEmail = getView().findViewById(R.id.username_login);
         etPass = getView().findViewById(R.id.password_register);
-        ivEyePass = getView().findViewById(R.id.iv_register_eye_pass);
         etPassValidation = getView().findViewById(R.id.passwordvalidation_register);
-        ivEyePassValidation = getView().findViewById(R.id.iv_register_eye_passvalidation);
         etIntegrationCode = getView().findViewById(R.id.validation_register);
-        ivEyePassIntegrationCode = getView().findViewById(R.id.iv_register_eye_integrationcode);
         btnRegister = getView().findViewById(R.id.btn_login_create_account);
 
         fAuth = FirebaseAuth.getInstance();
+        fStore = FirebaseFirestore.getInstance();
 
         //go to login text
         tvToLogin.setOnClickListener(view->{
@@ -162,23 +153,32 @@ public class RegisterAniFragment extends Fragment {
                     registeAnimation.setVisibility(View.INVISIBLE);
 
                     //create new auth on firebase
-                    String user = etUserName.getEditText().getText().toString();
+                    String email = etEmail.getEditText().getText().toString();
                     String pass = etPassValidation.getEditText().getText().toString();
                     String integrationCode = etIntegrationCode.getEditText().getText().toString();
 
                     //if not have any error its mean that can made auth at firebase
-                    if (Objects.equals(etUserName.getError(), null) && Objects.equals(etPass.getError(), null) && Objects.equals(etPassValidation.getError(), null) && Objects.equals(etIntegrationCode.getError(), null)){
-                        fAuth.createUserWithEmailAndPassword(user,pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                    if (Objects.equals(etEmail.getError(), null) && Objects.equals(etPass.getError(), null) && Objects.equals(etPassValidation.getError(), null) && Objects.equals(etIntegrationCode.getError(), null)){
+                        fAuth.createUserWithEmailAndPassword(email,pass).addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 //if success go to login screen
                                 if (task.isSuccessful()){
                                     Toast.makeText(getContext(), "ההרשמה בוצעה בהצלחה!", Toast.LENGTH_SHORT).show();
+
+                                    userID = fAuth.getUid();
+                                    DocumentReference documentReference = fStore.collection(KeysFirebaseStore.COLLECTION_USER).document(userID);
+                                    Map<String, Object> user = new HashMap<>();
+                                    user.put(KeysFirebaseStore.EMAIL, email);
+                                    user.put(KeysFirebaseStore.INTEGRATION_CODE, integrationCode);
+                                    documentReference.set(user);
+
+
                                     getFragmentManager().beginTransaction().
                                             setCustomAnimations(R.anim.enter_top_to_bottom,R.anim.exite_bottom_to_top,R.anim.enter_bottom_to_top,R.anim.exite_top_to_bottom).
                                             replace(R.id.mFragment, new LoginAniFragment()).commit();
                                 } else {
-                                    Toast.makeText(getContext(), "ERROR", Toast.LENGTH_SHORT).show();
+                                    etEmail.setError("המייל כבר קיים במערכת");
                                 }
                             }
                         });
@@ -190,46 +190,6 @@ public class RegisterAniFragment extends Fragment {
             });
 
         });
-
-
-        //Eyes Functions
-        ivEyePass.setOnClickListener(v->{
-            if (counterPassEye == 0){
-                ivEyePass.setImageResource(R.drawable.ic_eye_red_24dp);
-                etPass.getEditText().setInputType(InputType.TYPE_CLASS_TEXT);
-                counterPassEye++;
-            }else{
-                ivEyePass.setImageResource(R.drawable.ic_eye_white_24dp);
-                etPass.getEditText().setInputType(129);
-                counterPassEye--;
-            }
-        });
-
-        ivEyePassValidation.setOnClickListener(v->{
-            if (counterPassValidationEye == 0){
-                ivEyePassValidation.setImageResource(R.drawable.ic_eye_red_24dp);
-                etPassValidation.getEditText().setInputType(InputType.TYPE_CLASS_TEXT);
-                counterPassValidationEye++;
-            }else{
-                ivEyePassValidation.setImageResource(R.drawable.ic_eye_white_24dp);
-                etPassValidation.getEditText().setInputType(129);
-                counterPassValidationEye--;
-            }
-        });
-
-        ivEyePassIntegrationCode.setOnClickListener(v->{
-            if (counterIntegrationCodeEye == 0){
-                ivEyePassIntegrationCode.setImageResource(R.drawable.ic_eye_red_24dp);
-                etIntegrationCode.getEditText().setInputType(InputType.TYPE_CLASS_TEXT);
-                counterIntegrationCodeEye++;
-            }else{
-                ivEyePassIntegrationCode.setImageResource(R.drawable.ic_eye_white_24dp);
-                etIntegrationCode.getEditText().setInputType(129);
-                counterIntegrationCodeEye--;
-            }
-        });
-
-
 
     }
 
@@ -282,17 +242,19 @@ public class RegisterAniFragment extends Fragment {
     }
 
     private void validationField(){
-        //TODO:add validation if the auth exsist on firebase
-        String userName = etUserName.getEditText().getText().toString();
+
+        String email = etEmail.getEditText().getText().toString();
         String pass = etPass.getEditText().getText().toString();
         String passValidation = etPassValidation.getEditText().getText().toString();
         String intagrationCode = etIntegrationCode.getEditText().getText().toString();
 
 
-        if (TextUtils.isEmpty(userName)){
-            etUserName.setError("שדה חובה");
-        } else{
-            etUserName.setError(null);
+        if (TextUtils.isEmpty(email)){
+            etEmail.setError("שדה חובה");
+        }else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()){
+            etEmail.setError("נא להזין כתובת מייל תיקנית");
+        } else {
+            etEmail.setError(null);
         }
 
         if (TextUtils.isEmpty(pass)){
